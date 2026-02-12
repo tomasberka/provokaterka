@@ -21,6 +21,7 @@ from ollama_client import OllamaClient
 # ============================================================================
 
 DB_FILE = "fans_db.json"
+DB_COLUMNS = ["nickname", "tier", "total_support", "notes", "migrate_telegram", "created"]
 
 
 def load_db() -> list:
@@ -44,7 +45,7 @@ def get_df() -> pd.DataFrame:
     """Vrátí DataFrame s fanoušky."""
     data = load_db()
     if not data:
-        return pd.DataFrame(columns=["nickname", "tier", "total_support", "notes", "migrate_telegram", "created"])
+        return pd.DataFrame(columns=DB_COLUMNS)
     return pd.DataFrame(data)
 
 

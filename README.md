@@ -221,7 +221,7 @@ ollama serve
 
 **Výsledek:**
 - 🟢 **5/5 bodů** → `✅ SAFE TO UPLOAD` + 🎈 balloons
-- 🔴 **< 5 bodů** → `⚠️ UNSAFE` – nenahávej!
+- 🔴 **< 5 bodů** → `⚠️ UNSAFE` – nenahrávej!
 
 ---
 
