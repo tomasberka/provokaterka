@@ -1,0 +1,9 @@
+cd ~/CreatorOS
+git init
+git branch -M main
+
+# vytvoř základní soubory
+git add app.py
+git commit -m "feat: initial CreatorOS app"
+git remote add origin https://github.com/tomasberka/provokaterka.git
+git push -u origin main
