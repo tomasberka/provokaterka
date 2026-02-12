@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+fans_db.json
+.env
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.streamlit/secrets.toml
