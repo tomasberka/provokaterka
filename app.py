@@ -16,16 +16,11 @@ import random
 from ollama_client import OllamaClient
 
 
-# ============================================================================
-# DATABÁZOVÁ VRSTVA
-# ============================================================================
-
 DB_FILE = "fans_db.json"
 DB_COLUMNS = ["nickname", "tier", "total_support", "notes", "migrate_telegram", "created"]
 
 
 def load_db() -> list:
-    """Načte databázi fanoušků z JSON souboru."""
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, "r", encoding="utf-8") as f:
@@ -36,22 +31,16 @@ def load_db() -> list:
 
 
 def save_db(data: list) -> None:
-    """Uloží databázi fanoušků do JSON souboru."""
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def get_df() -> pd.DataFrame:
-    """Vrátí DataFrame s fanoušky."""
     data = load_db()
     if not data:
         return pd.DataFrame(columns=DB_COLUMNS)
     return pd.DataFrame(data)
 
-
-# ============================================================================
-# KONSTANTY
-# ============================================================================
 
 TIERS = ["Free", "Supporter", "VIP"]
 TIER_COLORS = {
@@ -66,11 +55,7 @@ TIER_EMOJI = {
 }
 
 
-# ============================================================================
-# ŠABLONY PRO RESPONSE ASSISTANT
-# ============================================================================
-
-# Kategorie zpráv s klíčovými slovy
+# Response Assistant templates
 KEYWORD_MAP = {
     "pozdrav": ["ahoj", "nazdar", "čau", "zdravím", "dobrý", "hej", "halo"],
     "kompliment": ["krásná", "nádherná", "sexy", "parádní", "úžasná", "bomba", "kráska", "líbíš"],
@@ -80,7 +65,6 @@ KEYWORD_MAP = {
     "dárek": ["dárek", "gift", "poslat", "support", "podpořit", "peníze", "cashflow"],
 }
 
-# Šablony odpovědí pro každou kategorii
 RESPONSE_TEMPLATES = {
     "pozdrav": [
         "Heeej! 🎭 Co se děje, milej? Jak ti letí den?",
@@ -128,7 +112,6 @@ RESPONSE_TEMPLATES = {
 
 
 def classify_message(msg: str) -> str:
-    """Klasifikuje zprávu podle klíčových slov."""
     msg_lower = msg.lower()
     for category, keywords in KEYWORD_MAP.items():
         if any(keyword in msg_lower for keyword in keywords):
@@ -137,19 +120,13 @@ def classify_message(msg: str) -> str:
 
 
 def generate_response(msg: str, persona_name: str = "BaddieBabe") -> tuple[str, str]:
-    """
-    Generuje odpověď na zprávu.
-    TODO: V budoucnu napojit na Ollama pro AI generování.
-    """
+    # TODO: napojit na Ollama pro AI generování
     category = classify_message(msg)
     template = random.choice(RESPONSE_TEMPLATES[category])
     return category, template
 
 
-# ============================================================================
-# ŠABLONY PRO STATUS GENERATOR
-# ============================================================================
-
+# Status Generator templates
 STATUS_TEMPLATES = {
     "ráno": [
         "Dobré ráno, milí! ☀️ Právě vstávám a už se těším na dnešek! Co vy?",
@@ -179,7 +156,6 @@ STATUS_TEMPLATES = {
 
 
 def get_auto_period() -> str:
-    """Automaticky určí denní období podle aktuálního času."""
     hour = datetime.now().hour
     if 5 <= hour < 12:
         return "ráno"
@@ -192,22 +168,14 @@ def get_auto_period() -> str:
 
 
 def generate_status(period: str = "auto") -> str:
-    """
-    Vygeneruje status pro zvolené období.
-    TODO: V budoucnu napojit na Ollama pro AI generování.
-    """
+    # TODO: napojit na Ollama pro AI generování
     if period == "auto":
         period = get_auto_period()
     templates = STATUS_TEMPLATES.get(period, STATUS_TEMPLATES["náhodný"])
     return random.choice(templates)
 
 
-# ============================================================================
-# SETUP & STYLING
-# ============================================================================
-
 def setup_page():
-    """Nastaví stránku a custom CSS."""
     st.set_page_config(
         page_title="BaddieOS v1.0",
         page_icon="🎭",
@@ -266,12 +234,7 @@ def setup_page():
     """, unsafe_allow_html=True)
 
 
-# ============================================================================
-# SIDEBAR NAVIGACE
-# ============================================================================
-
 def sidebar() -> str:
-    """Zobrazí sidebar s navigací."""
     with st.sidebar:
         st.markdown("# 🎭 BaddieOS")
         st.markdown("**Command Center v1.0**")
@@ -295,12 +258,7 @@ def sidebar() -> str:
         return page
 
 
-# ============================================================================
-# STRÁNKA: DASHBOARD
-# ============================================================================
-
 def page_dashboard():
-    """Hlavní dashboard s přehledem metrik."""
     st.title("📊 Dashboard")
     st.markdown("Přehled tvé fanouškovské základny")
     
@@ -311,47 +269,39 @@ def page_dashboard():
     
     with col1:
         total_fans = len(df)
-        # <!-- accessibility-fix: issue-3 - Custom HTML metric cards should use st.metric() for better accessibility -->
         st.markdown(f"""
-        <div class="metric-card" role="group" aria-label="Celkem fanoušků: {total_fans}">
+        <div class="metric-card">
             <h3>👥 Celkem fanoušků</h3>
-            <p style="font-size: 2em; margin: 0;">{total_fans}</p>
+            <h1>{total_fans}</h1>
         </div>
         """, unsafe_allow_html=True)
-        # <!-- /accessibility-fix -->
     
     with col2:
         vip_count = len(df[df["tier"] == "VIP"]) if not df.empty else 0
-        # <!-- accessibility-fix: issue-3 - Custom HTML metric cards should use st.metric() for better accessibility -->
         st.markdown(f"""
-        <div class="metric-card" role="group" aria-label="VIP fanoušci: {vip_count}">
+        <div class="metric-card">
             <h3>👑 VIP</h3>
-            <p style="font-size: 2em; margin: 0;">{vip_count}</p>
+            <h1>{vip_count}</h1>
         </div>
         """, unsafe_allow_html=True)
-        # <!-- /accessibility-fix -->
     
     with col3:
         supporter_count = len(df[df["tier"] == "Supporter"]) if not df.empty else 0
-        # <!-- accessibility-fix: issue-3 - Custom HTML metric cards should use st.metric() for better accessibility -->
         st.markdown(f"""
-        <div class="metric-card" role="group" aria-label="Supporters: {supporter_count}">
+        <div class="metric-card">
             <h3>⭐ Supporters</h3>
-            <p style="font-size: 2em; margin: 0;">{supporter_count}</p>
+            <h1>{supporter_count}</h1>
         </div>
         """, unsafe_allow_html=True)
-        # <!-- /accessibility-fix -->
     
     with col4:
         total_support = df["total_support"].sum() if not df.empty else 0
-        # <!-- accessibility-fix: issue-3 - Custom HTML metric cards should use st.metric() for better accessibility -->
         st.markdown(f"""
-        <div class="metric-card" role="group" aria-label="Celková podpora: {int(total_support)} Kč">
+        <div class="metric-card">
             <h3>💰 Celková podpora</h3>
-            <p style="font-size: 2em; margin: 0;">{int(total_support)} Kč</p>
+            <h1>{int(total_support)} Kč</h1>
         </div>
         """, unsafe_allow_html=True)
-        # <!-- /accessibility-fix -->
     
     st.markdown("---")
     
@@ -372,12 +322,7 @@ def page_dashboard():
         st.info("Zatím žádní fanoušci v databázi.")
 
 
-# ============================================================================
-# STRÁNKA: CRM & TŘÍDĚNÍ VOJÁČKŮ
-# ============================================================================
-
 def page_crm():
-    """CRM modul pro správu fanoušků."""
     st.title("👥 CRM & Třídění 'Vojáčků'")
     st.markdown("Správa tvé fanouškovské základny")
     
@@ -444,16 +389,14 @@ def page_crm():
                 color = TIER_COLORS[row["tier"]]
                 
                 # VIP řádky zvýrazněné
-                # <!-- accessibility-fix: issue-3 - VIP rows need ARIA attributes for screen readers -->
                 if row["tier"] == "VIP":
                     st.markdown(f"""
-                    <div class="vip-row" role="listitem" aria-label="VIP fanoušek {row['nickname']}, podpora {int(row['total_support'])} Kč">
-                        <strong><span aria-hidden="true">{emoji}</span> {row['nickname']}</strong> | 
+                    <div class="vip-row">
+                        <strong>{emoji} {row['nickname']}</strong> | 
                         <em>{row['tier']}</em> | 
                         <strong>{int(row['total_support'])} Kč</strong>
                     </div>
                     """, unsafe_allow_html=True)
-                # <!-- /accessibility-fix -->
                 else:
                     st.markdown(f"**{emoji} {row['nickname']}** | *{row['tier']}* | **{int(row['total_support'])} Kč**")
                 
@@ -476,12 +419,7 @@ def page_crm():
         st.info("Zatím žádní fanoušci v databázi. Přidej prvního pomocí formuláře výše!")
 
 
-# ============================================================================
-# STRÁNKA: RESPONSE ASSISTANT
-# ============================================================================
-
 def page_response_assistant():
-    """Modul pro generování odpovědí na zprávy."""
     st.title("💬 'Inteligentní Provokatérka'")
     st.markdown("AI asistent pro odpovídání na zprávy fanoušků")
     
@@ -537,12 +475,7 @@ def page_response_assistant():
             st.markdown("")
 
 
-# ============================================================================
-# STRÁNKA: SAFETY CHECKLIST
-# ============================================================================
-
 def page_safety_checklist():
-    """Modul pro kontrolu bezpečnosti nahrávaného obsahu."""
     st.title("🔒 Content Manager & Bezpečnost")
     st.markdown("5-bodový checklist před uploadem obsahu")
     
@@ -590,32 +523,25 @@ def page_safety_checklist():
         st.markdown("---")
         st.subheader("🎯 Výsledek")
         
-        # <!-- accessibility-fix: issue-3 - Status badges need ARIA roles and non-color indicators -->
         if total_checks == 5:
             st.markdown("""
-            <div class="safe-badge" role="status" aria-live="polite">
-                <span aria-hidden="true">✅</span> SAFE TO UPLOAD
+            <div class="safe-badge">
+                ✅ SAFE TO UPLOAD
             </div>
             """, unsafe_allow_html=True)
             st.balloons()
         else:
             st.markdown(f"""
-            <div class="unsafe-badge" role="alert" aria-live="assertive">
-                <span aria-hidden="true">⚠️</span> UNSAFE – {total_checks}/5 bodů
+            <div class="unsafe-badge">
+                ⚠️ UNSAFE – {total_checks}/5 bodů
             </div>
             """, unsafe_allow_html=True)
-        # <!-- /accessibility-fix -->
             st.warning(f"⚠️ Dokončeno pouze {total_checks}/5 bodů. Nahraj až po splnění všech!")
     else:
         st.info("👆 Nahraj soubor pro zahájení kontroly.")
 
 
-# ============================================================================
-# STRÁNKA: STATUS GENERATOR
-# ============================================================================
-
 def page_status_generator():
-    """Modul pro generování statusů."""
     st.title("📡 'Teď a Tady' – Status Generator")
     st.markdown("Automatické generování statusů pro sociální sítě")
     
@@ -674,12 +600,7 @@ def page_status_generator():
     st.info("💡 **TODO:** V budoucnu se toto napojí na Ollama pro AI generování na míru persony.")
 
 
-# ============================================================================
-# MAIN
-# ============================================================================
-
 def main():
-    """Hlavní vstupní bod aplikace."""
     setup_page()
     page = sidebar()
     
