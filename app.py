@@ -16,16 +16,11 @@ import random
 from ollama_client import OllamaClient
 
 
-# ============================================================================
-# DATABÁZOVÁ VRSTVA
-# ============================================================================
-
 DB_FILE = "fans_db.json"
 DB_COLUMNS = ["nickname", "tier", "total_support", "notes", "migrate_telegram", "created"]
 
 
 def load_db() -> list:
-    """Načte databázi fanoušků z JSON souboru."""
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, "r", encoding="utf-8") as f:
@@ -36,22 +31,16 @@ def load_db() -> list:
 
 
 def save_db(data: list) -> None:
-    """Uloží databázi fanoušků do JSON souboru."""
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def get_df() -> pd.DataFrame:
-    """Vrátí DataFrame s fanoušky."""
     data = load_db()
     if not data:
         return pd.DataFrame(columns=DB_COLUMNS)
     return pd.DataFrame(data)
 
-
-# ============================================================================
-# KONSTANTY
-# ============================================================================
 
 TIERS = ["Free", "Supporter", "VIP"]
 TIER_COLORS = {
@@ -66,11 +55,7 @@ TIER_EMOJI = {
 }
 
 
-# ============================================================================
-# ŠABLONY PRO RESPONSE ASSISTANT
-# ============================================================================
-
-# Kategorie zpráv s klíčovými slovy
+# Response Assistant templates
 KEYWORD_MAP = {
     "pozdrav": ["ahoj", "nazdar", "čau", "zdravím", "dobrý", "hej", "halo"],
     "kompliment": ["krásná", "nádherná", "sexy", "parádní", "úžasná", "bomba", "kráska", "líbíš"],
@@ -80,7 +65,6 @@ KEYWORD_MAP = {
     "dárek": ["dárek", "gift", "poslat", "support", "podpořit", "peníze", "cashflow"],
 }
 
-# Šablony odpovědí pro každou kategorii
 RESPONSE_TEMPLATES = {
     "pozdrav": [
         "Heeej! 🎭 Co se děje, milej? Jak ti letí den?",
@@ -128,7 +112,6 @@ RESPONSE_TEMPLATES = {
 
 
 def classify_message(msg: str) -> str:
-    """Klasifikuje zprávu podle klíčových slov."""
     msg_lower = msg.lower()
     for category, keywords in KEYWORD_MAP.items():
         if any(keyword in msg_lower for keyword in keywords):
@@ -137,19 +120,13 @@ def classify_message(msg: str) -> str:
 
 
 def generate_response(msg: str, persona_name: str = "BaddieBabe") -> tuple[str, str]:
-    """
-    Generuje odpověď na zprávu.
-    TODO: V budoucnu napojit na Ollama pro AI generování.
-    """
+    # TODO: napojit na Ollama pro AI generování
     category = classify_message(msg)
     template = random.choice(RESPONSE_TEMPLATES[category])
     return category, template
 
 
-# ============================================================================
-# ŠABLONY PRO STATUS GENERATOR
-# ============================================================================
-
+# Status Generator templates
 STATUS_TEMPLATES = {
     "ráno": [
         "Dobré ráno, milí! ☀️ Právě vstávám a už se těším na dnešek! Co vy?",
@@ -179,7 +156,6 @@ STATUS_TEMPLATES = {
 
 
 def get_auto_period() -> str:
-    """Automaticky určí denní období podle aktuálního času."""
     hour = datetime.now().hour
     if 5 <= hour < 12:
         return "ráno"
@@ -192,22 +168,14 @@ def get_auto_period() -> str:
 
 
 def generate_status(period: str = "auto") -> str:
-    """
-    Vygeneruje status pro zvolené období.
-    TODO: V budoucnu napojit na Ollama pro AI generování.
-    """
+    # TODO: napojit na Ollama pro AI generování
     if period == "auto":
         period = get_auto_period()
     templates = STATUS_TEMPLATES.get(period, STATUS_TEMPLATES["náhodný"])
     return random.choice(templates)
 
 
-# ============================================================================
-# SETUP & STYLING
-# ============================================================================
-
 def setup_page():
-    """Nastaví stránku a custom CSS."""
     st.set_page_config(
         page_title="BaddieOS v1.0",
         page_icon="🎭",
@@ -266,12 +234,7 @@ def setup_page():
     """, unsafe_allow_html=True)
 
 
-# ============================================================================
-# SIDEBAR NAVIGACE
-# ============================================================================
-
 def sidebar() -> str:
-    """Zobrazí sidebar s navigací."""
     with st.sidebar:
         st.markdown("# 🎭 BaddieOS")
         st.markdown("**Command Center v1.0**")
@@ -295,12 +258,7 @@ def sidebar() -> str:
         return page
 
 
-# ============================================================================
-# STRÁNKA: DASHBOARD
-# ============================================================================
-
 def page_dashboard():
-    """Hlavní dashboard s přehledem metrik."""
     st.title("📊 Dashboard")
     st.markdown("Přehled tvé fanouškovské základny")
     
@@ -364,12 +322,7 @@ def page_dashboard():
         st.info("Zatím žádní fanoušci v databázi.")
 
 
-# ============================================================================
-# STRÁNKA: CRM & TŘÍDĚNÍ VOJÁČKŮ
-# ============================================================================
-
 def page_crm():
-    """CRM modul pro správu fanoušků."""
     st.title("👥 CRM & Třídění 'Vojáčků'")
     st.markdown("Správa tvé fanouškovské základny")
     
@@ -466,12 +419,7 @@ def page_crm():
         st.info("Zatím žádní fanoušci v databázi. Přidej prvního pomocí formuláře výše!")
 
 
-# ============================================================================
-# STRÁNKA: RESPONSE ASSISTANT
-# ============================================================================
-
 def page_response_assistant():
-    """Modul pro generování odpovědí na zprávy."""
     st.title("💬 'Inteligentní Provokatérka'")
     st.markdown("AI asistent pro odpovídání na zprávy fanoušků")
     
@@ -527,12 +475,7 @@ def page_response_assistant():
             st.markdown("")
 
 
-# ============================================================================
-# STRÁNKA: SAFETY CHECKLIST
-# ============================================================================
-
 def page_safety_checklist():
-    """Modul pro kontrolu bezpečnosti nahrávaného obsahu."""
     st.title("🔒 Content Manager & Bezpečnost")
     st.markdown("5-bodový checklist před uploadem obsahu")
     
@@ -598,12 +541,7 @@ def page_safety_checklist():
         st.info("👆 Nahraj soubor pro zahájení kontroly.")
 
 
-# ============================================================================
-# STRÁNKA: STATUS GENERATOR
-# ============================================================================
-
 def page_status_generator():
-    """Modul pro generování statusů."""
     st.title("📡 'Teď a Tady' – Status Generator")
     st.markdown("Automatické generování statusů pro sociální sítě")
     
@@ -662,12 +600,7 @@ def page_status_generator():
     st.info("💡 **TODO:** V budoucnu se toto napojí na Ollama pro AI generování na míru persony.")
 
 
-# ============================================================================
-# MAIN
-# ============================================================================
-
 def main():
-    """Hlavní vstupní bod aplikace."""
     setup_page()
     page = sidebar()
     
