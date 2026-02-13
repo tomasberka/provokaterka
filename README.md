@@ -1,4 +1,4 @@
-# 🎭 BaddieOS v1.0 – Command Center pro Digitální Provokatérku
+# 🎭 BaddieOS v2.0 – Command Center pro Digitální Provokatérku
 
 ```
 ██████╗  █████╗ ██████╗ ██████╗ ██╗███████╗     ██████╗ ███████╗
@@ -54,10 +54,23 @@
 ```
 provokaterka/
 │
-├── app.py                    # 🎯 Hlavní Streamlit aplikace
-├── ollama_client.py          # 🤖 Ollama API klient (volitelné)
+├── app.py                    # 🎯 Hlavní Streamlit aplikace (routing & styling)
+├── config.py                 # ⚙️ Konstanty, šablony, nastavení
+├── database.py               # 💾 CRUD operace, CSV export
+├── responses.py              # 🧠 Klasifikace zpráv, generování odpovědí/statusů
+├── ollama_client.py          # 🤖 Ollama API klient (volitelné AI)
 ├── requirements.txt          # 📦 Python závislosti
 ├── .gitignore               # 🚫 Ignorované soubory
+│
+├── pages/                    # 📄 Jednotlivé stránky UI
+│   ├── dashboard.py          # 📊 Dashboard s metrikami a grafy
+│   ├── crm.py                # 👥 CRM – CRUD, filtry, CSV export
+│   ├── response_assistant.py # 💬 Odpovídání s Ollama fallbackem
+│   ├── safety.py             # 🔒 Bezpečnostní checklist
+│   └── status.py             # 📡 Status generátor
+│
+├── tests/                    # 🧪 Unit testy
+│   └── test_core.py          # Testy klasifikace, DB, exportu
 │
 ├── .streamlit/
 │   └── config.toml          # 🎨 Dark mode konfigurace
@@ -133,10 +146,8 @@ ollama serve
 
 ### Jak to funguje?
 
-- ✅ **BEZ Ollama:** Aplikace používá předpřipravené šablony
-- 🤖 **S Ollama:** Aplikace může generovat personalizované odpovědi (připraveno pro budoucí integraci)
-
-**💡 TODO:** Ollama integrace bude aktivována v budoucí verzi pomocí `ollama_client.py`
+- ✅ **BEZ Ollama:** Aplikace používá předpřipravené šablony (automatický fallback)
+- 🤖 **S Ollama:** Aplikace generuje personalizované AI odpovědi a statusy
 
 ---
 
@@ -289,10 +300,12 @@ ollama serve
 
 Plánované funkce pro budoucí verze:
 
-- [ ] 🤖 **Ollama integrace** – AI generování odpovědí a statusů
+- [x] 🤖 **Ollama integrace** – AI generování odpovědí a statusů (v2.0)
+- [x] 📊 **Export do CSV** – záloha a analýza dat (v2.0)
+- [x] 📈 **Analytika** – grafy rozložení fanoušků a podpory (v2.0)
+- [x] ✏️ **Editace fanoušků** – inline editace v CRM (v2.0)
+- [x] 🧪 **Unit testy** – 33 testů pro core logiku (v2.0)
 - [ ] 💾 **SQLite migrace** – výkonnější databáze
-- [ ] 📊 **Export do CSV** – záloha a analýza dat
-- [ ] 📈 **Analytika** – grafy, statistiky, trendy
 - [ ] 📱 **Telegram bot** – automatické odpovídání
 - [ ] 🎭 **Multi-persona** – správa více identit
 - [ ] ⏰ **Cron scheduling** – automatické posty
@@ -363,7 +376,7 @@ Máš problém nebo nápad na vylepšení?
 
 <div align="center">
 
-**🎭 BaddieOS v1.0 – Performance Art s Business Modelem 🎭**
+**🎭 BaddieOS v2.0 – Performance Art s Business Modelem 🎭**
 
 Made with 💙 for digital creators
 
