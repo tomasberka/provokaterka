@@ -56,6 +56,7 @@ provokaterka/
 │
 ├── app.py                    # 🎯 Hlavní Streamlit aplikace
 ├── ollama_client.py          # 🤖 Ollama API klient (volitelné)
+├── install_sd_mac.sh         # 🎨 Stable Diffusion instalační skript (macOS)
 ├── requirements.txt          # 📦 Python závislosti
 ├── .gitignore               # 🚫 Ignorované soubory
 │
@@ -225,7 +226,50 @@ ollama serve
 
 ---
 
-### 4️⃣ 📡 "Teď a Tady" – Status Generator
+### 4️⃣ 🎨 Stable Diffusion WebUI – AI Image Generation
+
+**Automatická instalace Stable Diffusion s ControlNet a ReActor pro macOS Apple Silicon.**
+
+**Features:**
+- 🤖 **Automatic1111 WebUI** – nejpopulárnější Stable Diffusion rozhraní
+- 🎛️ **ControlNet extension** – pokročilá kontrola nad generováním
+- 👤 **ReActor extension** – face swap AI technologie
+- 🍎 **Apple Silicon optimalizace** – plná podpora M1/M2/M3
+- ⚡ **Hardware acceleration** – využití Apple Neural Engine
+
+**Instalace (jednoduchá, automatizovaná):**
+
+```bash
+# Spusť instalační skript
+./install_sd_mac.sh
+```
+
+Skript provede:
+1. ✅ Kontrolu a instalaci závislostí (Homebrew, Python 3.10, cmake, rust, atd.)
+2. ✅ Naklonování Automatic1111 repozitáře
+3. ✅ Vytvoření Python virtual environment
+4. ✅ Instalaci kritických Silicon fixů (onnxruntime-silicon, insightface)
+5. ✅ Instalaci ControlNet a ReActor extensions
+6. ✅ Vytvoření launch skriptu s Mac-optimalizovanými parametry
+
+**Spuštění po instalaci:**
+
+```bash
+cd stable-diffusion-webui
+./run_mac.sh
+```
+
+Web rozhraní se otevře na: `http://127.0.0.1:7860`
+
+**Důležité:**
+- První spuštění stáhne modely (10-30 minut, ~10GB místa)
+- Používej ControlNet pro přesné vedení AI generování
+- ReActor umožňuje face swap na generovaných obrázcích
+- Vše běží 100% lokálně – žádný cloud
+
+---
+
+### 5️⃣ 📡 "Teď a Tady" – Status Generator
 
 **Automatické generování statusů pro sociální sítě podle denního období.**
 
