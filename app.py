@@ -264,7 +264,7 @@ def generate_comfyui_workflow(
                 "start_percent": 0.0,
                 "end_percent": 1.0,
                 "positive": ["6", 0],
-                "negative": ["6", 1],
+                "negative": ["7", 0],
                 "control_net": ["4", 0],
                 "image": ["3", 0]
             },
@@ -316,6 +316,7 @@ def generate_comfyui_workflow(
         },
         "11": {
             "inputs": {
+                "model": ["10", 0],
                 "model_name": "mm_sd_v15_v2.ckpt",
                 "beta_schedule": "linear (AnimateDiff)"
             },
@@ -1022,42 +1023,61 @@ def page_comfyui_pipeline():
     st.subheader("📦 Export ComfyUI Workflow")
     st.info("""
     💡 **Jak použít:**
-    1. Zkonfiguruj parametry výše
-    2. Klikni **Generovat workflow**
-    3. Stáhni JSON a importuj do ComfyUI (drag & drop do okna)
-    4. Nahraj `input_dance.mp4` a `dog_photo.png` do složky `ComfyUI/input/`
-    5. Klikni **Queue Prompt** – a sekáš obsah jako Baťa cvičky 🎉
+    1. Stáhni JSON šablonu nebo zkonfiguruj parametry a vygeneruj vlastní
+    2. Importuj do ComfyUI: **Workflow → Open (nebo drag & drop JSON do okna)**
+    3. Nahraj `input_dance.mp4` a `dog_photo.png` do složky `ComfyUI/input/`
+    4. Klikni **Queue Prompt** – a sekáš obsah jako Baťa cvičky 🎉
     """)
 
-    if st.button("⚡ Generovat ComfyUI Workflow JSON", type="primary"):
-        effective_seed = seed if seed != 0 else random.randint(1, 2**31 - 1)
-        workflow = generate_comfyui_workflow(
-            breed=breed,
-            positive_prompt=positive_prompt,
-            negative_prompt=negative_prompt,
-            controlnet_strength=controlnet_strength,
-            ip_adapter_weight=ip_adapter_weight,
-            steps=steps,
-            cfg=cfg,
-            seed=effective_seed,
-            width=width,
-            height=height,
-            frame_rate=frame_rate,
-            total_frames=total_frames,
-        )
-        workflow_json = json.dumps(workflow, ensure_ascii=False, indent=2)
+    # Stáhnout čistou šablonu
+    col_tmpl, col_gen = st.columns(2)
 
-        st.success("✅ Workflow vygenerováno!")
-        st.download_button(
-            label="⬇️ Stáhnout workflow.json",
-            data=workflow_json,
-            file_name=f"dog_dance_{breed.replace(' ', '_')}_workflow.json",
-            mime="application/json"
-        )
+    with col_tmpl:
+        st.markdown("**📄 Čistá šablona (doporučeno pro rychlý start)**")
+        template_path = os.path.join(os.path.dirname(__file__), "comfyui_dog_dance_template.json")
+        if os.path.exists(template_path):
+            with open(template_path, "r", encoding="utf-8") as f:
+                template_data = f.read()
+            st.download_button(
+                label="⬇️ Stáhnout čistou šablonu (JSON)",
+                data=template_data,
+                file_name="comfyui_dog_dance_template.json",
+                mime="application/json",
+                help="Hotový workflow s výchozími hodnotami – stačí nahrát soubory do ComfyUI/input/ a spustit"
+            )
+        st.caption("Golden Retriever · 576×768 · 24 framů · DWPose + IP-Adapter + AnimateDiff + Upscale")
 
-        # Náhled JSON
-        with st.expander("🔍 Náhled workflow JSON"):
-            st.code(workflow_json, language="json")
+    with col_gen:
+        st.markdown("**⚙️ Vlastní nastavení (z konfigurace výše)**")
+        if st.button("⚡ Generovat vlastní workflow JSON", type="primary"):
+            effective_seed = seed if seed != 0 else random.randint(1, 2**31 - 1)
+            workflow = generate_comfyui_workflow(
+                breed=breed,
+                positive_prompt=positive_prompt,
+                negative_prompt=negative_prompt,
+                controlnet_strength=controlnet_strength,
+                ip_adapter_weight=ip_adapter_weight,
+                steps=steps,
+                cfg=cfg,
+                seed=effective_seed,
+                width=width,
+                height=height,
+                frame_rate=frame_rate,
+                total_frames=total_frames,
+            )
+            workflow_json = json.dumps(workflow, ensure_ascii=False, indent=2)
+
+            st.success("✅ Workflow vygenerováno!")
+            st.download_button(
+                label="⬇️ Stáhnout vlastní workflow.json",
+                data=workflow_json,
+                file_name=f"dog_dance_{breed.replace(' ', '_')}_workflow.json",
+                mime="application/json"
+            )
+
+            # Náhled JSON
+            with st.expander("🔍 Náhled workflow JSON"):
+                st.code(workflow_json, language="json")
 
     st.markdown("---")
 
