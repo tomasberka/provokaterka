@@ -1,0 +1,205 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "realisticVisionV60B1_v51VAE.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint (Realistic Vision)"
+    }
+  },
+  "2": {
+    "inputs": {
+      "video": "input_dance.mp4",
+      "force_rate": 16,
+      "force_size": "Disabled",
+      "frame_load_cap": 24,
+      "skip_first_frames": 0,
+      "select_every_nth": 1
+    },
+    "class_type": "VHS_LoadVideo",
+    "_meta": {
+      "title": "Load Dance Video (replace input_dance.mp4)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "resolution": 576,
+      "image": ["2", 0]
+    },
+    "class_type": "DWPreprocessor",
+    "_meta": {
+      "title": "DWPose – Motion Extraction"
+    }
+  },
+  "4": {
+    "inputs": {
+      "control_net_name": "control_v11p_sd15_openpose_fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load DWPose ControlNet"
+    }
+  },
+  "5": {
+    "inputs": {
+      "strength": 0.75,
+      "start_percent": 0.0,
+      "end_percent": 1.0,
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "control_net": ["4", 0],
+      "image": ["3", 0]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet (strength 0.75 – suits dog anatomy)"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "anthropomorphic golden retriever dog, standing upright on two hind legs, dancing, human-like posture, highly detailed, realistic lighting, 4k, volumetric light",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive Prompt (edit breed here)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry, deformed limbs, extra legs, unnatural pose, low quality, watermark, cartoon",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "8": {
+    "inputs": {
+      "image": "dog_photo.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Dog Photo (replace dog_photo.png)"
+    }
+  },
+  "9": {
+    "inputs": {
+      "ipadapter_file": "ip-adapter-plus_sd15.bin"
+    },
+    "class_type": "IPAdapterModelLoader",
+    "_meta": {
+      "title": "Load IP-Adapter Plus"
+    }
+  },
+  "10": {
+    "inputs": {
+      "weight": 0.85,
+      "weight_type": "original",
+      "start_at": 0.0,
+      "end_at": 1.0,
+      "combine_embeds": "concat",
+      "embeds_scaling": "V only",
+      "model": ["1", 0],
+      "ipadapter": ["9", 0],
+      "image": ["8", 0]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": {
+      "title": "IP-Adapter Plus – Dog Identity (weight 0.85)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "model": ["10", 0],
+      "model_name": "mm_sd_v15_v2.ckpt",
+      "beta_schedule": "linear (AnimateDiff)"
+    },
+    "class_type": "AnimateDiffLoaderWithContext",
+    "_meta": {
+      "title": "AnimateDiff V2 – Temporal Consistency"
+    }
+  },
+  "12": {
+    "inputs": {
+      "width": 576,
+      "height": 768,
+      "batch_size": 24
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent (576x768, 24 frames)"
+    }
+  },
+  "13": {
+    "inputs": {
+      "seed": 42,
+      "steps": 25,
+      "cfg": 7.5,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["11", 0],
+      "positive": ["5", 0],
+      "negative": ["5", 1],
+      "latent_image": ["12", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler (25 steps, CFG 7.5)"
+    }
+  },
+  "14": {
+    "inputs": {
+      "samples": ["13", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "15": {
+    "inputs": {
+      "upscale_model": "RealESRGAN_x2plus.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "Load Upscale Model (RealESRGAN x2)"
+    }
+  },
+  "16": {
+    "inputs": {
+      "upscale_model": ["15", 0],
+      "image": ["14", 0]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "Tile Upscale – Higher Resolution Output"
+    }
+  },
+  "17": {
+    "inputs": {
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "dog_dance_golden_retriever",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["16", 0]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Save Output Video (MP4)"
+    }
+  }
+}

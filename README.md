@@ -299,6 +299,35 @@ Web rozhraní se otevře na: `http://127.0.0.1:7860`
 
 ---
 
+### 6️⃣ 🎬 ComfyUI Pipeline – Tančící Pes
+
+**Konfigurátor a exportér ComfyUI workflow pro generování videa psa tančícího podle lidského vzoru.**
+
+**Pipeline kroky:**
+1. 🦴 **DWPose ControlNet** – Extrakce pohybu z referenčního tančícího videa (přesnější než OpenPose pro ruce a složité pózy)
+2. 🐶 **IP-Adapter Plus** – Zachování identity konkrétního psa (textura srsti, barvy, tvar obličeje) bez nutnosti LoRA tréninku
+3. 🎞️ **AnimateDiff V2/V3** – Časová konzistence mezi framy – pes se v průběhu tance nemění
+4. ✍️ **Prompt Engineering** – Klíčová slova `anthropomorphic` / `standing upright` pro propojení lidské kostry s psím tělem
+5. 🔍 **Tile Upscale** – Post-produkce na ostrý vertikální 9:16 formát pro Reels/TikTok
+
+**Features:**
+- ⚙️ **Interaktivní konfigurátor** – nastavení ControlNet Strength, IP-Adapter Weight, framů, FPS, rozlišení
+- 📥 **Export JSON** – stažení hotového workflow pro drag & drop import do ComfyUI
+- 📋 **Přehled modelů** – kompletní seznam potřebných modelů a rozšíření s cestami
+
+**Potřebné ComfyUI modely:**
+| Komponenta | Model |
+|-----------|-------|
+| Base | `realisticVisionV60B1_v51VAE.safetensors` |
+| DWPose ControlNet | `control_v11p_sd15_openpose_fp16.safetensors` |
+| IP-Adapter Plus | `ip-adapter-plus_sd15.bin` |
+| AnimateDiff | `mm_sd_v15_v2.ckpt` |
+| Upscale | `RealESRGAN_x2plus.pth` |
+
+**Potřebná rozšíření:** `ComfyUI-AnimateDiff-Evolved`, `ComfyUI-VideoHelperSuite`, `ComfyUI_IPAdapter_plus`, `comfyui_controlnet_aux`
+
+---
+
 ## 🔐 Bezpečnost & Soukromí
 
 ### 🏠 100% Lokální

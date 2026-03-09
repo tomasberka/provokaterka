@@ -203,6 +203,195 @@ def generate_status(period: str = "auto") -> str:
 
 
 # ============================================================================
+# COMFYUI PIPELINE – GENERÁTOR WORKFLOW
+# ============================================================================
+
+def generate_comfyui_workflow(
+    breed: str,
+    positive_prompt: str,
+    negative_prompt: str,
+    controlnet_strength: float,
+    ip_adapter_weight: float,
+    steps: int,
+    cfg: float,
+    seed: int,
+    width: int,
+    height: int,
+    frame_rate: int,
+    total_frames: int,
+) -> dict:
+    """
+    Generuje ComfyUI API workflow JSON pro tancujícího psa.
+    Pipeline: DWPose ControlNet → IP-Adapter Plus → AnimateDiff → Tile Upscale.
+    """
+    workflow = {
+        "1": {
+            "inputs": {"ckpt_name": "realisticVisionV60B1_v51VAE.safetensors"},
+            "class_type": "CheckpointLoaderSimple",
+            "_meta": {"title": "Načíst základní model"}
+        },
+        "2": {
+            "inputs": {
+                "video": "input_dance.mp4",
+                "force_rate": frame_rate,
+                "force_size": "Disabled",
+                "frame_load_cap": total_frames,
+                "skip_first_frames": 0,
+                "select_every_nth": 1
+            },
+            "class_type": "VHS_LoadVideo",
+            "_meta": {"title": "Načíst taneční video"}
+        },
+        "3": {
+            "inputs": {
+                "detect_hand": "enable",
+                "detect_body": "enable",
+                "detect_face": "enable",
+                "resolution": width,
+                "image": ["2", 0]
+            },
+            "class_type": "DWPreprocessor",
+            "_meta": {"title": "DWPose – extrakce pohybu"}
+        },
+        "4": {
+            "inputs": {"control_net_name": "control_v11p_sd15_openpose_fp16.safetensors"},
+            "class_type": "ControlNetLoader",
+            "_meta": {"title": "Načíst DWPose ControlNet"}
+        },
+        "5": {
+            "inputs": {
+                "strength": controlnet_strength,
+                "start_percent": 0.0,
+                "end_percent": 1.0,
+                "positive": ["6", 0],
+                "negative": ["7", 0],
+                "control_net": ["4", 0],
+                "image": ["3", 0]
+            },
+            "class_type": "ControlNetApplyAdvanced",
+            "_meta": {"title": f"Aplikovat ControlNet (síla: {controlnet_strength})"}
+        },
+        "6": {
+            "inputs": {
+                "text": positive_prompt,
+                "clip": ["1", 1]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {"title": "Pozitivní prompt"}
+        },
+        "7": {
+            "inputs": {
+                "text": negative_prompt,
+                "clip": ["1", 1]
+            },
+            "class_type": "CLIPTextEncode",
+            "_meta": {"title": "Negativní prompt"}
+        },
+        "8": {
+            "inputs": {"image": "dog_photo.png", "upload": "image"},
+            "class_type": "LoadImage",
+            "_meta": {"title": "Načíst fotku psa"}
+        },
+        "9": {
+            "inputs": {
+                "ipadapter_file": "ip-adapter-plus_sd15.bin"
+            },
+            "class_type": "IPAdapterModelLoader",
+            "_meta": {"title": "Načíst IP-Adapter Plus model"}
+        },
+        "10": {
+            "inputs": {
+                "weight": ip_adapter_weight,
+                "weight_type": "original",
+                "start_at": 0.0,
+                "end_at": 1.0,
+                "combine_embeds": "concat",
+                "embeds_scaling": "V only",
+                "model": ["1", 0],
+                "ipadapter": ["9", 0],
+                "image": ["8", 0]
+            },
+            "class_type": "IPAdapterAdvanced",
+            "_meta": {"title": f"IP-Adapter Plus (váha: {ip_adapter_weight})"}
+        },
+        "11": {
+            "inputs": {
+                "model": ["10", 0],
+                "model_name": "mm_sd_v15_v2.ckpt",
+                "beta_schedule": "linear (AnimateDiff)"
+            },
+            "class_type": "AnimateDiffLoaderWithContext",
+            "_meta": {"title": "AnimateDiff V2 – časová konzistence"}
+        },
+        "12": {
+            "inputs": {
+                "seed": seed,
+                "steps": steps,
+                "cfg": cfg,
+                "sampler_name": "euler_ancestral",
+                "scheduler": "karras",
+                "denoise": 1.0,
+                "model": ["11", 0],
+                "positive": ["5", 0],
+                "negative": ["5", 1],
+                "latent_image": ["13", 0]
+            },
+            "class_type": "KSampler",
+            "_meta": {"title": "KSampler – generování"}
+        },
+        "13": {
+            "inputs": {
+                "width": width,
+                "height": height,
+                "batch_size": total_frames
+            },
+            "class_type": "EmptyLatentImage",
+            "_meta": {"title": "Prázdný latentní prostor"}
+        },
+        "14": {
+            "inputs": {
+                "samples": ["12", 0],
+                "vae": ["1", 2]
+            },
+            "class_type": "VAEDecode",
+            "_meta": {"title": "VAE Decode"}
+        },
+        "15": {
+            "inputs": {
+                "upscale_model": "RealESRGAN_x2plus.pth"
+            },
+            "class_type": "UpscaleModelLoader",
+            "_meta": {"title": "Načíst Upscale model"}
+        },
+        "16": {
+            "inputs": {
+                "upscale_model": ["15", 0],
+                "image": ["14", 0]
+            },
+            "class_type": "ImageUpscaleWithModel",
+            "_meta": {"title": "Tile Upscale – zvýšení rozlišení"}
+        },
+        "17": {
+            "inputs": {
+                "frame_rate": frame_rate,
+                "loop_count": 0,
+                "filename_prefix": f"dog_dance_{breed.replace(' ', '_')}",
+                "format": "video/h264-mp4",
+                "pix_fmt": "yuv420p",
+                "crf": 19,
+                "save_metadata": True,
+                "pingpong": False,
+                "save_output": True,
+                "images": ["16", 0]
+            },
+            "class_type": "VHS_VideoCombine",
+            "_meta": {"title": "Uložit výsledné video"}
+        }
+    }
+    return workflow
+
+
+# ============================================================================
 # SETUP & STYLING
 # ============================================================================
 
@@ -284,7 +473,8 @@ def sidebar() -> str:
                 "👥 CRM & Vojáčci",
                 "💬 Response Assistant",
                 "🔒 Safety Checklist",
-                "📡 Status Generator"
+                "📡 Status Generator",
+                "🎬 ComfyUI Pipeline"
             ]
         )
         
@@ -663,6 +853,252 @@ def page_status_generator():
 
 
 # ============================================================================
+# STRÁNKA: COMFYUI PIPELINE
+# ============================================================================
+
+def page_comfyui_pipeline():
+    """Modul pro konfiguraci a export ComfyUI workflow pro tančícího psa."""
+    st.title("🎬 ComfyUI Pipeline – Tančící Pes")
+    st.markdown("Konfigurátor workflow pro generování videa psa tančícího podle lidského vzoru")
+
+    # Přehled pipeline
+    st.markdown("---")
+    st.subheader("🗺️ Pipeline přehled")
+
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>1️⃣</h3>
+            <p><strong>DWPose</strong></p>
+            <p>Extrakce pohybu</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>2️⃣</h3>
+            <p><strong>IP-Adapter</strong></p>
+            <p>Identita psa</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>3️⃣</h3>
+            <p><strong>AnimateDiff</strong></p>
+            <p>Časová konzistence</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>4️⃣</h3>
+            <p><strong>Prompt</strong></p>
+            <p>Engineering</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col5:
+        st.markdown("""
+        <div class="metric-card">
+            <h3>5️⃣</h3>
+            <p><strong>Upscale</strong></p>
+            <p>Post-produkce</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Krok 1 – DWPose ControlNet
+    with st.expander("1️⃣ Extrakce pohybu – DWPose ControlNet", expanded=True):
+        st.markdown("""
+        **Proč DWPose a ne klasický OpenPose?**
+        DWPose (DWPreprocessor) je výrazně přesnější v detekci rukou a složitých póz – ideální pro taneční pohyby.
+
+        - 📥 **Vstup:** Referenční TikTok video s tancem
+        - ⚙️ **Proces:** DWPose vyextrahuje z tancujícího člověka "stickmana" – kostru pohybu
+        - 🐾 **Trik:** Pes nemá lidská kolena → sniž `strength` na 0.7–0.8, aby AI mohla přizpůsobit psí anatomii
+        """)
+        controlnet_strength = st.slider(
+            "ControlNet Strength",
+            min_value=0.0, max_value=1.0,
+            value=0.75, step=0.05,
+            help="Doporučená hodnota: 0.70–0.80 pro psí anatomii"
+        )
+        st.caption(f"✅ Vybrána síla: **{controlnet_strength}** – {'🐾 Vhodné pro psa' if 0.65 <= controlnet_strength <= 0.85 else '⚠️ Mimo doporučený rozsah'}")
+
+    # Krok 2 – IP-Adapter
+    with st.expander("2️⃣ Zachování identity psa – IP-Adapter Plus", expanded=True):
+        st.markdown("""
+        **Proč IP-Adapter místo LoRA?**
+        IP-Adapter Plus nevyžaduje trénování – stačí jedna čistá fotka psa.
+
+        - 📥 **Vstup:** Fotka psa (ideálně pohled přímo do kamery)
+        - 🎨 **Výsledek:** AI převezme texturu srsti, barvy a tvar obličeje
+        - 💡 **Tip:** Pro velmi specifické psy přidej druhý pass přes IP-Adapter FaceID zaměřený jen na čumák
+        """)
+        ip_adapter_weight = st.slider(
+            "IP-Adapter Weight",
+            min_value=0.0, max_value=1.5,
+            value=0.85, step=0.05,
+            help="Vyšší hodnota = silnější vliv fotky psa na výsledek"
+        )
+        st.caption(f"✅ Vybrána váha: **{ip_adapter_weight}**")
+
+    # Krok 3 – AnimateDiff
+    with st.expander("3️⃣ Časová konzistence – AnimateDiff", expanded=True):
+        st.markdown("""
+        **Proč AnimateDiff?**
+        Zabraňuje blikání a "třesu" mezi snímky – pes se během celého tance nebude měnit na jiné plemeno.
+
+        - ✅ Doporučené modely: **V2** nebo **V3** pro nejlepší plynulost
+        - 🎞️ Uzamyká kontext mezi jednotlivými framy
+        """)
+        col1, col2 = st.columns(2)
+        with col1:
+            total_frames = st.number_input(
+                "Počet framů", min_value=8, max_value=128,
+                value=24, step=8,
+                help="Doporučeno: 16–32 framů pro plynulou animaci"
+            )
+        with col2:
+            frame_rate = st.number_input(
+                "Frame rate (FPS)", min_value=8, max_value=30,
+                value=16, step=1
+            )
+        st.caption(f"🎬 Délka videa: cca **{total_frames / frame_rate:.1f}s** při {frame_rate} FPS")
+
+    # Krok 4 – Prompt Engineering
+    with st.expander("4️⃣ Prompt Engineering", expanded=True):
+        st.markdown("""
+        **Klíčová slova pro propojení lidské kostry s psím tělem:**
+        - `anthropomorphic` nebo `standing upright` dává AI povolení aplikovat DWPose kostru na zvíře
+        """)
+        breed = st.text_input(
+            "Plemeno psa",
+            value="golden retriever",
+            help="Např. golden retriever, german shepherd, husky..."
+        )
+        positive_prompt = st.text_area(
+            "Pozitivní prompt",
+            value=f"anthropomorphic {breed} dog, standing upright on two hind legs, dancing, human-like posture, highly detailed, realistic lighting, 4k, volumetric light",
+            height=80
+        )
+        negative_prompt = st.text_area(
+            "Negativní prompt",
+            value="blurry, deformed limbs, extra legs, unnatural pose, low quality, watermark, cartoon",
+            height=60
+        )
+
+    # Krok 5 – Post-produkce
+    with st.expander("5️⃣ Post-produkce & Upscale", expanded=True):
+        st.markdown("""
+        **Výstup z AnimateDiff bývá v nižším rozlišení – pro ostré video na sociální sítě ho upscaluj.**
+
+        - 🔲 **Tile ControlNet Upscale** – zachová detaily srsti
+        - 📱 **Výstupní formát:** Vertikální 9:16 pro Reels/TikTok
+        - 🎵 **Tip:** Přilep moderní energický beat a máš hotovo!
+        """)
+        col1, col2 = st.columns(2)
+        with col1:
+            width = st.selectbox("Šířka (px)", [512, 576, 640, 768], index=1)
+        with col2:
+            height = st.selectbox("Výška (px)", [768, 896, 1024], index=0)
+        st.caption(f"📐 Poměr stran: **{width}×{height}** (~{height/width:.2f}:1)")
+
+    # Pokročilé nastavení
+    with st.expander("⚙️ Pokročilé nastavení sampleru"):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            steps = st.slider("Kroky sampleru", min_value=10, max_value=50, value=25, step=5)
+        with col2:
+            cfg = st.slider("CFG Scale", min_value=1.0, max_value=15.0, value=7.5, step=0.5)
+        with col3:
+            seed = st.number_input("Seed (0 = náhodný)", min_value=0, max_value=2**31 - 1,
+                                   value=0, step=1)
+
+    st.markdown("---")
+
+    # Generování a stažení workflow
+    st.subheader("📦 Export ComfyUI Workflow")
+    st.info("""
+    💡 **Jak použít:**
+    1. Stáhni JSON šablonu nebo zkonfiguruj parametry a vygeneruj vlastní
+    2. Importuj do ComfyUI: **Workflow → Open (nebo drag & drop JSON do okna)**
+    3. Nahraj `input_dance.mp4` a `dog_photo.png` do složky `ComfyUI/input/`
+    4. Klikni **Queue Prompt** – a sekáš obsah jako Baťa cvičky 🎉
+    """)
+
+    # Stáhnout čistou šablonu
+    col_tmpl, col_gen = st.columns(2)
+
+    with col_tmpl:
+        st.markdown("**📄 Čistá šablona (doporučeno pro rychlý start)**")
+        template_path = os.path.join(os.path.dirname(__file__), "comfyui_dog_dance_template.json")
+        if os.path.exists(template_path):
+            with open(template_path, "r", encoding="utf-8") as f:
+                template_data = f.read()
+            st.download_button(
+                label="⬇️ Stáhnout čistou šablonu (JSON)",
+                data=template_data,
+                file_name="comfyui_dog_dance_template.json",
+                mime="application/json",
+                help="Hotový workflow s výchozími hodnotami – stačí nahrát soubory do ComfyUI/input/ a spustit"
+            )
+        st.caption("Golden Retriever · 576×768 · 24 framů · DWPose + IP-Adapter + AnimateDiff + Upscale")
+
+    with col_gen:
+        st.markdown("**⚙️ Vlastní nastavení (z konfigurace výše)**")
+        if st.button("⚡ Generovat vlastní workflow JSON", type="primary"):
+            effective_seed = seed if seed != 0 else random.randint(1, 2**31 - 1)
+            workflow = generate_comfyui_workflow(
+                breed=breed,
+                positive_prompt=positive_prompt,
+                negative_prompt=negative_prompt,
+                controlnet_strength=controlnet_strength,
+                ip_adapter_weight=ip_adapter_weight,
+                steps=steps,
+                cfg=cfg,
+                seed=effective_seed,
+                width=width,
+                height=height,
+                frame_rate=frame_rate,
+                total_frames=total_frames,
+            )
+            workflow_json = json.dumps(workflow, ensure_ascii=False, indent=2)
+
+            st.success("✅ Workflow vygenerováno!")
+            st.download_button(
+                label="⬇️ Stáhnout vlastní workflow.json",
+                data=workflow_json,
+                file_name=f"dog_dance_{breed.replace(' ', '_')}_workflow.json",
+                mime="application/json"
+            )
+
+            # Náhled JSON
+            with st.expander("🔍 Náhled workflow JSON"):
+                st.code(workflow_json, language="json")
+
+    st.markdown("---")
+
+    # Přehled potřebných modelů
+    st.subheader("📋 Potřebné modely & rozšíření")
+    st.markdown("""
+    | Komponenta | Soubor | Složka v ComfyUI |
+    |-----------|--------|-----------------|
+    | Base model | `realisticVisionV60B1_v51VAE.safetensors` | `models/checkpoints/` |
+    | DWPose ControlNet | `control_v11p_sd15_openpose_fp16.safetensors` | `models/controlnet/` |
+    | IP-Adapter Plus | `ip-adapter-plus_sd15.bin` | `models/ipadapter/` |
+    | AnimateDiff V2 | `mm_sd_v15_v2.ckpt` | `custom_nodes/ComfyUI-AnimateDiff-Evolved/models/` |
+    | Upscale | `RealESRGAN_x2plus.pth` | `models/upscale_models/` |
+    | **Rozšíření** | ComfyUI-AnimateDiff-Evolved | `custom_nodes/` |
+    | **Rozšíření** | ComfyUI-VideoHelperSuite | `custom_nodes/` |
+    | **Rozšíření** | ComfyUI_IPAdapter_plus | `custom_nodes/` |
+    | **Rozšíření** | comfyui_controlnet_aux | `custom_nodes/` |
+    """)
+
+
+# ============================================================================
 # MAIN
 # ============================================================================
 
@@ -682,6 +1118,8 @@ def main():
         page_safety_checklist()
     elif page == "📡 Status Generator":
         page_status_generator()
+    elif page == "🎬 ComfyUI Pipeline":
+        page_comfyui_pipeline()
 
 
 if __name__ == "__main__":
