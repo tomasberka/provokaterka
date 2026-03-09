@@ -9,11 +9,10 @@ import pandas as pd
 import json
 import os
 from datetime import datetime
-from typing import Optional
 import random
 
 # Import Ollama klienta (připraveno na budoucí integraci)
-from ollama_client import OllamaClient
+from ollama_client import OllamaClient  # noqa: F401
 
 
 # ============================================================================
@@ -623,7 +622,6 @@ def page_crm():
         if not df_filtered.empty:
             for idx, row in df_filtered.iterrows():
                 emoji = TIER_EMOJI[row["tier"]]
-                color = TIER_COLORS[row["tier"]]
                 
                 # VIP řádky zvýrazněné
                 if row["tier"] == "VIP":
@@ -668,7 +666,7 @@ def page_response_assistant():
     # Nastavení persony
     with st.expander("⚙️ Nastavení Persony", expanded=False):
         persona_name = st.text_input("Jméno persony", value="BaddieBabe")
-        persona_lore = st.text_area(
+        st.text_area(
             "Persona Lore (background příběh)",
             value="Jsem sebevědomá, trochu drzá, ale vtipná digitální influencerka. Miluji zábavu a komunikaci s fanoušky.",
             height=100
@@ -981,7 +979,10 @@ def page_comfyui_pipeline():
         )
         positive_prompt = st.text_area(
             "Pozitivní prompt",
-            value=f"anthropomorphic {breed} dog, standing upright on two hind legs, dancing, human-like posture, highly detailed, realistic lighting, 4k, volumetric light",
+            value=(
+                f"anthropomorphic {breed} dog, standing upright on two hind legs, "
+                "dancing, human-like posture, highly detailed, realistic lighting, 4k, volumetric light"
+            ),
             height=80
         )
         negative_prompt = st.text_area(
